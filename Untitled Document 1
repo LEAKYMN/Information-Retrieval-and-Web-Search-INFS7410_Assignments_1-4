@@ -1,0 +1,269 @@
+package ass1;
+
+
+
+import java.io.*;
+import java.util.*;
+
+public class Ass1 {
+
+    //Global variables
+    public static BufferedReader buffer;
+    public static Hashtable<String, Integer> wordList = new Hashtable<String, Integer>();
+    public static ArrayList<Hashtable <String,Integer>> fileMap = new ArrayList<Hashtable<String,Integer>>();
+    public static Set<String> tagNames = new HashSet<String>();
+    //public static ArrayList<Map.Entry<String, Integer>> list;
+
+    public static int documentsCount = 0;
+    public static int totalTokens = 0;
+    public static int uniqueWords = 0;
+    public static int tagCount = 0;
+    public static int singleOccureneWords = 0;
+
+    public static ArrayList<Map.Entry<String, Integer>> sortedList;
+
+
+    public Ass1() {
+        // TODO Auto-generated constructor stub
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        String cranfield = "/home/s4470936/Downloads/dataset(1)/cranfieldDocs";
+        File cranfieldDocs = new File(cranfield);
+        ReadFile(cranfieldDocs);
+
+        System.out.println("Total number of documents: " + fileMap.size());
+
+        totalTokens = CalculateNumberOfTokens(wordList);
+        System.out.println("Total number Of words = " + totalTokens);
+
+        uniqueWords = CalculateUniqueWords(wordList);
+        System.out.println("Total number Of distinct words = " + uniqueWords);
+
+        singleOccureneWords = CalculateSingleOccurenceWords(wordList);
+        System.out.println("Total number Of words that occur only once = " + singleOccureneWords);
+
+        FindaHundredMostFrequentWords(wordList);
+
+        StopWordsRemoval (cranfieldDocs,wordList);
+        
+
+        System.out.println("\n***********************************\nAfter removing stop words \n***********************************\n");
+
+        //Total number of tokens calculation
+        totalTokens = CalculateNumberOfTokens(wordList);
+        System.out.println("Total number Of words = " + totalTokens);
+
+        //Total number of unique words calculation
+        uniqueWords = CalculateUniqueWords(wordList);
+        System.out.println("Total number Of distinct words = " + uniqueWords);
+
+        //Unique words calculation
+        singleOccureneWords = CalculateSingleOccurenceWords(wordList);
+        System.out.println("Total number Of words that occur only once = " + singleOccureneWords);
+
+        // most frequent words
+        FindaHundredMostFrequentWords(wordList);
+
+    }
+
+    public static void ReadFile(File cranfieldDocs) throws IOException{
+        for (File file: cranfieldDocs.listFiles())
+        {
+            if(file.isDirectory())
+            {
+                ReadFile(file);
+            }
+
+            else
+            {
+                documentsCount++;
+                try
+                {
+                    buffer = new BufferedReader(new FileReader(file));
+                }
+                catch (FileNotFoundException e)
+                {
+                    System.out.println("File not Found");
+
+                }
+                
+                tagCount = tagCount + TagHandler(file, tagNames);
+                
+                TokenHandler(file, tagNames);
+
+            }
+        }
+
+
+    }
+
+    public static int TagHandler(File file, Set<String> tagNames) throws IOException
+    {
+        String line;
+        int tag_count = 0;
+
+
+        buffer = new BufferedReader(new FileReader(file));
+        while((line = buffer.readLine()) != null)
+        {
+        
+            if(line.contains("<"))
+            {
+                tag_count++;
+
+                String b = line.replaceAll("[<*>/]", "");
+                tagNames.add(b);
+            }
+
+        }
+        tag_count/=2; 
+        return tag_count;
+    }
+
+    public static void TokenHandler(File file, Set<String> tagNames) throws IOException
+    {
+        String line;
+        String words[];
+
+        buffer = new BufferedReader(new FileReader(file));
+        Hashtable<String, Integer> tempMap = new Hashtable<String, Integer>();
+
+        while((line = buffer.readLine()) != null)
+        {
+
+            String s1 = line.replaceAll("[^a-zA-Z.]+"," "); // a blank space replace.
+            String s2 = s1.replaceAll("[.]", "");//Replace 
+            words = s2.split(" ");
+
+            for(String word : words)
+            {
+                
+                if(!tagNames.contains(word) && !word.equals(""))
+                {
+                    word = word.toLowerCase(); 
+
+                    
+                    if(!wordList.containsKey(word))
+                    {
+                        
+                        wordList.put(word, 1);
+
+                        
+                        if(!tempMap.containsKey(word))
+                        {
+                            tempMap.put(word,1);
+
+                        }
+                        else
+                        {
+                            tempMap.put(word, tempMap.get(word)+ 1);
+
+                        }
+                    }
+                    else
+                    {
+                        
+                        wordList.put(word, wordList.get(word) + 1);
+                        if(!tempMap.containsKey(word))
+                        {
+                            tempMap.put(word,1);
+
+                        }
+                        else
+                        {
+                            tempMap.put(word, tempMap.get(word)+ 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        //adding count to file map,after reading
+        fileMap.add(tempMap);
+    }
+
+    
+    public static int CalculateNumberOfTokens(Hashtable<String, Integer> myWordList)
+    {
+        int noOfTokens = 0;
+
+        for (Integer value: myWordList.values())
+        {
+            noOfTokens = noOfTokens + value;
+        }
+        return noOfTokens;
+    }
+
+    public static int CalculateUniqueWords(Hashtable<String, Integer> myWordList)
+    {
+
+        return myWordList.size();
+    }
+
+    public static int CalculateSingleOccurenceWords(Hashtable<String, Integer> myWordList)
+    {
+        int count = 0;
+
+        for (Integer value: myWordList.values())
+        {
+            if(value == 1)
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    //Sorting hashtable
+    public static ArrayList<Map.Entry<String, Integer>> SortHashTable(Hashtable<String, Integer> myWordList)
+    {
+        ArrayList<Map.Entry<String, Integer>> list = new ArrayList<Map.Entry<String, Integer>>(myWordList.entrySet());
+        Collections.sort(list, new Comparator<Map.Entry<String, Integer>>(){
+            public int compare(Map.Entry<String, Integer> o1, Map.Entry<String, Integer> o2) {
+                return o2.getValue().compareTo(o1.getValue());
+            }});
+        return list;
+    }
+
+    public static void FindaHundredMostFrequentWords(Hashtable<String, Integer> myWordList)
+    {
+        //Sort of hashtable
+
+        sortedList = SortHashTable(myWordList);
+        System.out.println("The 100 most frequent words are: ");
+        for(int i=0;i<100;i++)
+        {
+            System.out.println("\t" + (i+1) + "." + " " + sortedList.get(i));
+        }
+    }
+
+    public static Hashtable<String, Integer> StopWordsRemoval (File file, Hashtable<String, Integer> wordList) throws IOException {
+        int k=0,j;
+        String sCurrentLine;
+        String[] stopwords = new String[2000];
+        try
+        {
+            FileReader fr=new FileReader("/home/s4470936/Downloads/dataset(1)/common_words.txt");
+            BufferedReader br= new BufferedReader(fr);
+            while ((sCurrentLine = br.readLine()) != null){
+                stopwords[k]=sCurrentLine;
+                k++;
+            }
+            Set<String> keys = wordList.keySet();
+            for(String key: keys)
+            {
+                for(j = 0; j < k; j++)
+                {
+                    if(wordList.keySet().equals(stopwords[j]))
+                        wordList.remove(key);
+                }
+            }
+        }
+        catch(Exception ex)
+        {System.out.println(ex);}
+
+        return wordList;
+    }
+}
